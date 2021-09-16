@@ -2,14 +2,14 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 import plotly.express as px
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import LabelEncoder
+import joblib as jb
 
 #função para carregar o dataset
 @st.cache
 def get_data():
     df = pd.read_csv("/Users/Issamu Umeda/Documents/GitHub/Property Maintenance Blight Ticket Fines/csv/train.csv", encoding='ISO-8859-1', low_memory=False)
     df = df[(df['city'].str.lower() == 'detroit') & (~df['compliance_detail'].str.contains('not responsible')) & (~df['compliance_detail'].str.contains('compliant by no fine'))].set_index('ticket_id')
+    df['owed_amount'] = df['judgment_amount'] - df['discount_amount']
     return df
 
 
@@ -28,28 +28,17 @@ def transform(le, data_list):
 
 
 #função para treinar o modelo
-def train_model():
-    data = get_data()
-    columns = ['disposition', 'violation_code', 'owed_amount']
-    X = data[columns]
-    y = data['compliance']
-    X['disposition'] = transform(le_disposition, X['disposition'])
-    X['violation_code'] = transform(le_violation, X['violation_code'])
-    rf = RandomForestClassifier(bootstrap= True, max_depth=10, max_features='sqrt', min_samples_leaf=1, min_samples_split=5, n_estimators=10)
-    rf.fit(X, y)
-    return rf
-
+def get_models():
+    rf = jb.load('/Users/Issamu Umeda/Documents/GitHub/Property Maintenance Blight Ticket Fines/model/rf_blight_ticket.pk;.z')
+    le_disposition = jb.load('/Users/Issamu Umeda/Documents/GitHub/Property Maintenance Blight Ticket Fines/model/le_disposition_blight_ticket.pk;.z')
+    le_violation = jb.load('/Users/Issamu Umeda/Documents/GitHub/Property Maintenance Blight Ticket Fines/model/le_violation_blight_ticket.pk;.z')
+    return rf, le_disposition, le_violation
 
 #criando um dataframe
 data = get_data()
 
-#treinando o modelo
-columns = ['disposition', 'violation_code', 'owed_amount']
-X = data[columns]
-y = data['compliance']
-le_disposition = LabelEncoder().fit(list(X['disposition']) + ['Unknown'])
-le_violation = LabelEncoder().fit(list(X['violation_code']) + ['Unknown'])
-model = train_model()
+#obtendo os modelos
+model, le_disposition, le_violation = get_models()
 
 #título
 st.title("Data App - Predicting Probability of Paying Blight Ticket on Time")
