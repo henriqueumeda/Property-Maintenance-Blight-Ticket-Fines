@@ -7,7 +7,7 @@ import joblib as jb
 #função para carregar o dataset
 @st.cache
 def get_data():
-    df = pd.read_csv("/Users/Issamu Umeda/Documents/GitHub/Property Maintenance Blight Ticket Fines/csv/train.csv", encoding='ISO-8859-1', low_memory=False)
+    df = pd.read_csv("csv/train.csv", encoding='ISO-8859-1', low_memory=False)
     df = df[(df['city'].str.lower() == 'detroit') & (~df['compliance_detail'].str.contains('not responsible')) & (~df['compliance_detail'].str.contains('compliant by no fine'))].set_index('ticket_id')
     df['owed_amount'] = df['judgment_amount'] - df['discount_amount']
     return df
@@ -29,9 +29,9 @@ def transform(le, data_list):
 
 #função para treinar o modelo
 def get_models():
-    rf = jb.load('/Users/Issamu Umeda/Documents/GitHub/Property Maintenance Blight Ticket Fines/model/rf_blight_ticket.pk;.z')
-    le_disposition = jb.load('/Users/Issamu Umeda/Documents/GitHub/Property Maintenance Blight Ticket Fines/model/le_disposition_blight_ticket.pk;.z')
-    le_violation = jb.load('/Users/Issamu Umeda/Documents/GitHub/Property Maintenance Blight Ticket Fines/model/le_violation_blight_ticket.pk;.z')
+    rf = jb.load('model/rf_blight_ticket.pk;.z')
+    le_disposition = jb.load('model/le_disposition_blight_ticket.pk;.z')
+    le_violation = jb.load('model/le_violation_blight_ticket.pk;.z')
     return rf, le_disposition, le_violation
 
 #criando um dataframe
