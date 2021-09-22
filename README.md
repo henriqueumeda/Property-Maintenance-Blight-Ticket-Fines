@@ -4,6 +4,7 @@ This is the repo of the Property Maintenance Blight Ticket Fines Payment Predict
  
 # Project
 - In this project, I built a streamlit app to predict, using a Random Forest trained machine mearning model, the chance of a resident of Detroit city to pay the blight ticket on time.
+- [Webapp Link](https://share.streamlit.io/henriqueumeda/property-maintenance-blight-ticket-fines/main/app.py)
 
 <p align="center">
   <img  src="images/streamlit-app.png">
