@@ -9,7 +9,7 @@ from sklearn.preprocessing import LabelEncoder
 #função para carregar o dataset
 @st.cache
 def get_data():
-    df = pd.read_csv("/Users/Issamu Umeda/Documents/GitHub/Property Maintenance Blight Ticket Fines/csv/train.csv", encoding='ISO-8859-1', low_memory=False)
+    df = pd.read_csv("csv/train.csv", encoding='ISO-8859-1', low_memory=False)
     df = df[(df['city'].str.lower() == 'detroit') & (~df['compliance_detail'].str.contains('not responsible')) & (~df['compliance_detail'].str.contains('compliant by no fine'))].set_index('ticket_id')
     df['owed_amount'] = df['judgment_amount'] - df['discount_amount']
     df = pd.concat([df, df['ticket_issued_date'].str.extract(r'(?P<ticket_issued_year>\d{4})-(?P<ticket_issued_month>\d{2})')], axis=1)
@@ -33,7 +33,7 @@ def transform(le, data_list):
 
 #função para treinar o modelo
 def get_models():
-    rf = jb.load('/Users/Issamu Umeda/Documents/GitHub/Property Maintenance Blight Ticket Fines/model/rf_blight_ticket.pk;.z')
+    rf = jb.load('model/rf_blight_ticket.pk;.z')
     return rf
 
 #criando um dataframe
