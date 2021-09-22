@@ -3,13 +3,17 @@ import numpy as np
 import streamlit as st
 import plotly.express as px
 import joblib as jb
+import datetime
+from sklearn.preprocessing import LabelEncoder
 
 #função para carregar o dataset
 @st.cache
 def get_data():
-    df = pd.read_csv("csv/train.csv", encoding='ISO-8859-1', low_memory=False)
+    df = pd.read_csv("/Users/Issamu Umeda/Documents/GitHub/Property Maintenance Blight Ticket Fines/csv/train.csv", encoding='ISO-8859-1', low_memory=False)
     df = df[(df['city'].str.lower() == 'detroit') & (~df['compliance_detail'].str.contains('not responsible')) & (~df['compliance_detail'].str.contains('compliant by no fine'))].set_index('ticket_id')
     df['owed_amount'] = df['judgment_amount'] - df['discount_amount']
+    df = pd.concat([df, df['ticket_issued_date'].str.extract(r'(?P<ticket_issued_year>\d{4})-(?P<ticket_issued_month>\d{2})')], axis=1)
+    df['ticket_issued_semester'] = np.where(df.ticket_issued_month.astype('int') <= 6, 1, 2)
     return df
 
 
@@ -29,16 +33,15 @@ def transform(le, data_list):
 
 #função para treinar o modelo
 def get_models():
-    rf = jb.load('model/rf_blight_ticket.pk;.z')
-    le_disposition = jb.load('model/le_disposition_blight_ticket.pk;.z')
-    le_violation = jb.load('model/le_violation_blight_ticket.pk;.z')
-    return rf, le_disposition, le_violation
+    rf = jb.load('/Users/Issamu Umeda/Documents/GitHub/Property Maintenance Blight Ticket Fines/model/rf_blight_ticket.pk;.z')
+    return rf
 
 #criando um dataframe
 data = get_data()
 
 #obtendo os modelos
-model, le_disposition, le_violation = get_models()
+model = get_models()
+le_disposition = LabelEncoder().fit(list(data['disposition']) + ['Unknown'])
 
 #título
 st.title("Data App - Predicting Probability of Paying Blight Ticket on Time")
@@ -50,7 +53,7 @@ st.markdown("This is a Data App used to show the Machine Learning solution for t
 st.subheader("Selecting the attributes")
 
 #atributos para serem exibidos por padrão
-defaultcols = ['disposition', 'violation_code', 'violation_description', 'owed_amount']
+defaultcols = ['disposition', 'ticket_issued_date', 'owed_amount']
 
 #definindo atributos a partir do multiselect
 cols = st.multiselect("Attributes", data.columns.tolist(), default=defaultcols)
@@ -80,12 +83,10 @@ disposition = st.sidebar.selectbox('Judgement Type', data.disposition.unique())
 #transformando o dado de entrada em valor binário
 disposition = transform(le_disposition, pd.Series(disposition))[0]
 
-violation_desc = st.sidebar.selectbox('Violation', sorted(data.violation_description.unique()))
-
-violation = st.sidebar.selectbox('Violation', data.loc[data['violation_description'] == violation_desc, 'violation_code'].unique())
-
-#transformando o dado de entrada em valor binário
-violation = transform(le_violation, pd.Series(violation))[0]
+issued_date = st.sidebar.date_input("Ticket Issued Date", value=datetime.date.today())
+datee = datetime.datetime.strptime(str(issued_date), "%Y-%m-%d")
+issued_month = datee.month
+issued_semester = np.where(issued_month <= 6, 1, 2)
 
 fine = st.sidebar.number_input("Fine Amount", value=data.fine_amount.mean())
 admin = st.sidebar.selectbox("Admin Fee", (0, 20))
@@ -101,7 +102,7 @@ btn_predict = st.sidebar.button("Predict")
 
 #verifica se o botão foi acionado
 if btn_predict:
-    result = model.predict_proba([[disposition, violation, owed_amount]])
+    result = model.predict_proba([[owed_amount, issued_semester, disposition]])
     st.subheader("The chance of this person paying the blight ticket on time is:")
     result = str(round(result[0][1]*100,2)) + '%'
     st.write(result)
